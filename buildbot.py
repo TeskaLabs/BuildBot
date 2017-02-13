@@ -16,13 +16,20 @@ CONFIG.read(os.path.join(BIN_DIR,'buildbot.conf'))
 
 ###
 
-def send_slack_message(status_color, text, attachments):
+def send_slack_message(status, text, attachments):
 	url = CONFIG.get("buildbot:slack", "url")
 	if url is None or url == '':
 		L.info("No Slack URL is given")
 		return;
 
 	dt = datetime.datetime.utcnow()
+
+	status_color_map = {
+		"OK": "good",
+		"WARN": "warning",
+		"FAILED": "danger"
+	}
+	status_color = status_color_map.get(status, "danger")
 
 	data = {
 		"channel": CONFIG.get("availmon:slack", "channel", fallback="#apitest"),
@@ -32,8 +39,8 @@ def send_slack_message(status_color, text, attachments):
 		"attachments":[
 			{
 				"color": status_color,
-				"fallback": "Build report",
-				"title": "Build report",
+				"fallback": "{} build".format(status),
+				"title": "{} build".format(status),
 				"text": text,
 				"mrkdwn_in": ["fields"],
 				"fields": [
@@ -78,11 +85,11 @@ def main():
 	slack_attachments = {}
 
 	if p.returncode == 0:
-		status = "good"
-		slack_text.append("Build OK")
+		status = "OK"
+		#slack_text.append("Build OK")
 	else:
-		status = "danger"
-		slack_text.append("Build failed: {}".format(p.returncode))
+		status = "FAILED"
+		slack_text.append("Return code: {}".format(p.returncode))
 
 	if out is not None:
 		out = out.decode('utf-8')
@@ -94,11 +101,15 @@ def main():
 
 		if len(out_arr) > 0:
 			slack_attachments["STDOUT"] = out_arr
+			if status != "FAILED":
+				status = "WARN"
 
 	if err is not None:
 		err = err.decode('utf-8')
 		err_arr = err.split('\n')
 		slack_attachments["STDERR"] = err_arr
+		if status != "FAILED":
+			status = "WARN"
 
 	send_slack_message(status, '\n'.join(slack_text), slack_attachments)
 
