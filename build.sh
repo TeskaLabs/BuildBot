@@ -1,6 +1,8 @@
 #!/bin/sh -e
 
+unset GIT_DIR
 cd /home/ateska/Workspace/seacat/server
+
 git pull
 git submodule update --init --recursive
 
