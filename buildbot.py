@@ -1,4 +1,4 @@
-#!/opt/python3/bin/python3
+#!/usr/bin/env python3
 import configparser, datetime, os, sys, urllib.request, json, platform, subprocess
 
 ###
@@ -102,8 +102,8 @@ def main():
 
 	send_slack_message(status, '\n'.join(slack_text), slack_attachments)
 
-	if not os.path.exists("/home/ateska/Workspace/seacat/buildbot/logs/out.txt"):
-		os.makedirs("/home/ateska/Workspace/seacat/buildbot/logs/out.txt")
+	if not os.path.exists("/home/ateska/Workspace/seacat/buildbot/logs/"):
+		os.makedirs("/home/ateska/Workspace/seacat/buildbot/logs/")
 	open("/home/ateska/Workspace/seacat/buildbot/logs/out.txt", "w").write(out)
 
 if __name__ == '__main__':
