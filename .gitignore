@@ -1,1 +1,3 @@
-buildbot.conf
+/buildbot.conf
+/logs
+
