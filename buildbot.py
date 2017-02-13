@@ -33,14 +33,14 @@ def send_slack_message(status, text, attachments):
 
 	data = {
 		"channel": CONFIG.get("availmon:slack", "channel", fallback="#apitest"),
-		"username": "BuildBot @ {}".format(platform.node().partition('.')[0]),
+		"username": "BuildBot",
 		"icon_emoji": ":robot_face:",
 		
 		"attachments":[
 			{
 				"color": status_color,
-				"fallback": "{} build".format(status),
-				"title": "{} build".format(status),
+				"fallback": "{} @ {}".format(status, platform.node().partition('.')[0]),
+				"title": "{} @ {}".format(status, platform.node().partition('.')[0]),
 				"text": text,
 				"mrkdwn_in": ["fields"],
 				"fields": [
@@ -98,6 +98,9 @@ def main():
 		for line in out.split('\n'):
 			if contains_warns(line):
 				out_arr.append(line)
+
+			if line.startswith("GIT_VERSION: "):
+				slack_text.append("Version: {}".format(line[13:].strip()))
 
 		if len(out_arr) > 0:
 			slack_attachments["STDOUT"] = out_arr
