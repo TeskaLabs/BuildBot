@@ -22,6 +22,7 @@ def send_slack_message(status, text, attachments):
 		L.info("No Slack URL is given")
 		return;
 
+
 	dt = datetime.datetime.utcnow()
 
 	status_color_map = {
@@ -32,7 +33,7 @@ def send_slack_message(status, text, attachments):
 	status_color = status_color_map.get(status, "danger")
 
 	data = {
-		"channel": CONFIG.get("availmon:slack", "channel", fallback="#apitest"),
+		"channel": CONFIG.get("buildbot:slack", "channel", fallback="#apitest"),
 		"username": "BuildBot",
 		"icon_emoji": ":robot_face:",
 		
