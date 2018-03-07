@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
+import argparse
+import logging
 import configparser, datetime, os, sys, urllib.request, json, platform, subprocess
+
+###
+
+L = logging.getLogger(__name__)
 
 ###
 
@@ -7,12 +13,30 @@ BIN_DIR = os.path.dirname(os.path.realpath(__file__))
 
 CONFIG = configparser.ConfigParser()
 CONFIG.read_dict({
+	'general': {
+		'config_file': os.path.join(BIN_DIR,'buildbot.conf'),
+		'log_dir': '/home/ateska/Workspace/seacat/buildbot/logs/',
+	},
+	'buildbot' : {
+		'exec': '/home/ateska/Workspace/seacat/buildbot/build.sh',
+		'working_directory': '/home/ateska/Workspace/seacat/server',
+	},
 	'buildbot:slack' : {
 		"url" : '',
 		"channel" : '',
 	}
 })
-CONFIG.read(os.path.join(BIN_DIR,'buildbot.conf'))
+
+parser = argparse.ArgumentParser(
+	formatter_class=argparse.RawDescriptionHelpFormatter,
+	description="Buildbot\n2018 TeskaLabs Ltd\nhttps://www.teskalabs.com/\n\n",
+)
+parser.add_argument('-c', '--config', help='Specify file path to configuration file')
+args = parser.parse_args()
+if args.config is not None:
+	CONFIG['general']['config_file'] = args.config
+
+CONFIG.read(CONFIG['general']['config_file'])
 
 ###
 
@@ -79,18 +103,26 @@ def contains_warns(line):
 ###
 
 def main():
-	p = subprocess.Popen(["/home/ateska/Workspace/seacat/buildbot/build.sh"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd="/home/ateska/Workspace/seacat/server")
-	out, err = p.communicate()
+	p = None
+	try:
+		p = subprocess.Popen([CONFIG.get("buildbot", "exec")], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=CONFIG['buildbot']['working_directory'])
+		out, err = p.communicate()
+	except Exception as e:
+		out = None
+		err = str(e).encode('utf-8')
 
 	slack_text = []
 	slack_attachments = {}
 
-	if p.returncode == 0:
-		status = "OK"
-		#slack_text.append("Build OK")
+	if p is not None:
+		if p.returncode == 0:
+			status = "OK"
+			#slack_text.append("Build OK")
+		else:
+			status = "FAILED"
+			slack_text.append("Return code: {}".format(p.returncode))
 	else:
 		status = "FAILED"
-		slack_text.append("Return code: {}".format(p.returncode))
 
 	if out is not None:
 		out = out.decode('utf-8')
@@ -117,9 +149,12 @@ def main():
 
 	send_slack_message(status, '\n'.join(slack_text), slack_attachments)
 
-	if not os.path.exists("/home/ateska/Workspace/seacat/buildbot/logs/"):
-		os.makedirs("/home/ateska/Workspace/seacat/buildbot/logs/")
-	open("/home/ateska/Workspace/seacat/buildbot/logs/out.txt", "w").write(out)
+	try:
+		if not os.path.exists(CONFIG['general']['log_dir']):
+			os.makedirs(CONFIG['general']['log_dir'])
+		open(os.path.join(CONFIG['general']['log_dir'], "out.txt"), "w").write(out)
+	except Exception as e:
+		L.error(e)
 
 if __name__ == '__main__':
 	os.chdir(BIN_DIR)
