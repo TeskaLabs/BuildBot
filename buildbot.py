@@ -134,6 +134,8 @@ def main():
 
 			if line.startswith("GIT_VERSION: "):
 				slack_text.append("SeaCat Server {}".format(line[13:].strip()))
+			elif line.startswith("SLACK: "):
+				slack_text.append(line[7:].strip())
 
 		if len(out_arr) > 0:
 			slack_attachments["STDOUT"] = out_arr
